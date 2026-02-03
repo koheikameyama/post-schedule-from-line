@@ -1,4 +1,4 @@
-import { Client, TextMessage, TemplateMessage } from '@line/bot-sdk';
+import { Client, TextMessage } from '@line/bot-sdk';
 
 const config = {
   channelSecret: process.env.LINE_CHANNEL_SECRET || '',
@@ -7,24 +7,13 @@ const config = {
 
 export const lineClient = new Client(config);
 
-export function createAuthMessage(userId: string): TemplateMessage {
+export function createAuthMessage(userId: string): TextMessage {
   const baseUrl = process.env.GOOGLE_REDIRECT_URI?.replace('/auth/google/callback', '') || 'http://localhost:3000';
   const authUrl = `${baseUrl}/auth/google?userId=${encodeURIComponent(userId)}`;
 
   return {
-    type: 'template',
-    altText: 'Google認証が必要です',
-    template: {
-      type: 'buttons',
-      text: 'このBotを使うには、Googleカレンダーとの連携が必要です。\n\n下のボタンをタップして認証してください。',
-      actions: [
-        {
-          type: 'uri',
-          label: 'Google認証を開始',
-          uri: authUrl,
-        },
-      ],
-    },
+    type: 'text',
+    text: `このBotを使うには、Googleカレンダーとの連携が必要です。\n\n【認証手順】\n1. 下のURLを長押し\n2. 「Safariで開く」または「Chromeで開く」を選択\n3. Google認証を完了してください\n\n${authUrl}\n\n※LINE内蔵ブラウザでは認証できません。必ず外部ブラウザで開いてください。`,
   };
 }
 
