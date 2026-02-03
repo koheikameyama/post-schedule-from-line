@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import { verifyLineSignature } from '../lineSignature';
-import crypto from 'crypto';
+import { Request, Response } from "express";
+import { verifyLineSignature } from "../lineSignature";
+import crypto from "crypto";
 
-describe('LINE Signature Verification', () => {
-  const channelSecret = 'test-channel-secret';
+describe("LINE Signature Verification", () => {
+  const channelSecret = "test-channel-secret";
   const originalEnv = process.env.LINE_CHANNEL_SECRET;
 
   beforeAll(() => {
@@ -14,16 +14,17 @@ describe('LINE Signature Verification', () => {
     process.env.LINE_CHANNEL_SECRET = originalEnv;
   });
 
-  it('should pass verification with valid signature', () => {
+  it("should pass verification with valid signature", () => {
     const body = JSON.stringify({ events: [] });
     const signature = crypto
-      .createHmac('sha256', channelSecret)
+      .createHmac("sha256", channelSecret)
       .update(body)
-      .digest('base64');
+      .digest("base64");
 
     const req = {
-      headers: { 'x-line-signature': signature },
+      headers: { "x-line-signature": signature },
       body: body,
+      rawBody: body,
     } as any as Request;
 
     const res = {
@@ -39,12 +40,13 @@ describe('LINE Signature Verification', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('should reject request with invalid signature', () => {
+  it("should reject request with invalid signature", () => {
     const body = JSON.stringify({ events: [] });
 
     const req = {
-      headers: { 'x-line-signature': 'invalid-signature' },
+      headers: { "x-line-signature": "invalid-signature" },
       body: body,
+      rawBody: body,
     } as any as Request;
 
     const res = {
@@ -61,7 +63,7 @@ describe('LINE Signature Verification', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Invalid signature' });
   });
 
-  it('should reject request without signature', () => {
+  it("should reject request without signature", () => {
     const req = {
       headers: {},
       body: JSON.stringify({ events: [] }),
