@@ -3,6 +3,7 @@ import { WebhookEvent, MessageEvent, TextEventMessage } from '@line/bot-sdk';
 import { verifyLineSignature } from '../middleware/lineSignature';
 import { lineClient, createAuthMessage, createScheduleNotFoundMessage, createErrorMessage } from '../lib/lineClient';
 import { extractSchedules } from '../lib/gemini';
+import { createMultipleCalendarEvents } from '../lib/googleCalendar';
 import prisma from '../lib/db';
 
 const router = Router();
@@ -52,31 +53,50 @@ async function handleTextMessage(event: MessageEvent) {
       return;
     }
 
-    // Save pending schedules to database
+    // Register schedules to Google Calendar
+    if (!user.googleAccessToken || !user.googleRefreshToken) {
+      await lineClient.replyMessage(event.replyToken, createAuthMessage(userId));
+      return;
+    }
+
+    const eventIds = await createMultipleCalendarEvents(
+      user.googleAccessToken,
+      user.googleRefreshToken,
+      result.schedules.map((s) => ({
+        title: s.title,
+        description: s.description,
+        location: s.location,
+        startDateTime: s.startDateTime,
+        endDateTime: s.endDateTime,
+      }))
+    );
+
+    // Save registered schedules to database
     const lineMessageId = event.message.id;
     await Promise.all(
-      result.schedules.map((schedule) =>
+      result.schedules.map((schedule, index) =>
         prisma.pendingSchedule.create({
           data: {
             userId: user.id,
             lineMessageId,
             title: schedule.title,
             description: schedule.description,
+            location: schedule.location,
             startDateTime: new Date(schedule.startDateTime),
             endDateTime: schedule.endDateTime ? new Date(schedule.endDateTime) : null,
-            status: 'PENDING',
+            status: 'REGISTERED',
           },
         })
       )
     );
 
-    // For MVP: send simple confirmation message
-    // TODO: Replace with Flex Message carousel in Phase 2
+    // Send confirmation message
     const confirmationText = result.schedules
       .map(
         (s, i) =>
           `【スケジュール ${i + 1}】\n` +
           `タイトル: ${s.title}\n` +
+          (s.location ? `場所: ${s.location}\n` : '') +
           `開始: ${new Date(s.startDateTime).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}\n` +
           `終了: ${s.endDateTime ? new Date(s.endDateTime).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '未設定'}`
       )
@@ -84,7 +104,7 @@ async function handleTextMessage(event: MessageEvent) {
 
     await lineClient.replyMessage(event.replyToken, {
       type: 'text',
-      text: `以下のスケジュールを抽出しました：\n\n${confirmationText}\n\n（MVP版では自動登録機能は未実装です）`,
+      text: `✅ Googleカレンダーに登録しました！\n\n${confirmationText}`,
     });
   } catch (error) {
     console.error('Error handling text message:', error);

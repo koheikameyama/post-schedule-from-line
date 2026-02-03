@@ -27,6 +27,7 @@ model PendingSchedule {
   lineMessageId   String
   title           String
   description     String?
+  location        String?
   startDateTime   DateTime
   endDateTime     DateTime?
   calendarId      String?

@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export interface Schedule {
   title: string;
   description?: string;
+  location?: string;
   startDateTime: string; // ISO 8601 format
   endDateTime?: string; // ISO 8601 format
 }
@@ -31,6 +32,7 @@ export async function extractSchedules(message: string): Promise<ExtractionResul
     {
       "title": "会議",
       "description": "営業チームとの打ち合わせ",
+      "location": "会議室A",
       "startDateTime": "2026-02-04T15:00:00+09:00",
       "endDateTime": "2026-02-04T16:00:00+09:00"
     }
@@ -40,6 +42,8 @@ export async function extractSchedules(message: string): Promise<ExtractionResul
 注意事項：
 - 日時が曖昧な場合は推測して補完してください（「明日」→ 具体的な日付）
 - 終了時刻がない場合は開始時刻の1時間後を設定
+- 場所が含まれている場合は location フィールドに含めてください（例: 「渋谷で」→ "location": "渋谷"）
+- 場所がない場合は location フィールドを省略してください
 - スケジュール情報が全く含まれていない場合は、空の配列を返してください
 - 現在時刻: ${currentTime}
 - タイムゾーン: Asia/Tokyo (+09:00)
