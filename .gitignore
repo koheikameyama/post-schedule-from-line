@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+.env.prod
+.env.*.local
 
 # Database files (excluded)
 *.db
