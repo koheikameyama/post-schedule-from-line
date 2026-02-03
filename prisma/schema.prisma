@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String            @id @default(uuid())
+  lineUserId           String            @unique
+  googleAccessToken    String?
+  googleRefreshToken   String?
+  googleTokenExpiry    DateTime?
+  googleCalendars      String?           // JSON string
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  pendingSchedules     PendingSchedule[]
+  scheduleHistories    ScheduleHistory[]
+}
+
+model PendingSchedule {
+  id              String            @id @default(uuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineMessageId   String
+  title           String
+  description     String?
+  startDateTime   DateTime
+  endDateTime     DateTime?
+  calendarId      String?
+  status          ScheduleStatus    @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  scheduleHistories ScheduleHistory[]
+
+  @@index([userId])
+  @@index([lineMessageId])
+}
+
+enum ScheduleStatus {
+  PENDING
+  REGISTERED
+  SKIPPED
+}
+
+model ScheduleHistory {
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduleId      String
+  schedule        PendingSchedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  action          HistoryAction
+  calendarId      String?
+  googleEventId   String?
+  createdAt       DateTime         @default(now())
+
+  @@index([userId])
+  @@index([scheduleId])
+}
+
+enum HistoryAction {
+  REGISTERED
+  SKIPPED
+}

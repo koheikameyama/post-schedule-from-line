@@ -3,5 +3,5 @@ dist/
 .env
 *.db
 *.db-journal
-prisma/migrations/
-node_modules
+
+/src/generated/prisma

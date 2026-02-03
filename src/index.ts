@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+import prisma from './lib/db';
 
 dotenv.config();
 
@@ -11,6 +12,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/db-test', async (req: Request, res: Response) => {
+  try {
+    const count = await prisma.user.count();
+    res.json({ status: 'ok', userCount: count });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: (error as Error).message });
+  }
 });
 
 // Error handling middleware
