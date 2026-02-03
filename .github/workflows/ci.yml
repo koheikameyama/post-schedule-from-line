@@ -11,17 +11,6 @@ on:
       - 'tsconfig.json'
       - '.github/workflows/ci.yml'
       - '.tool-versions'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'prisma/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - '.github/workflows/ci.yml'
-      - '.tool-versions'
-
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
