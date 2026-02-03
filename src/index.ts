@@ -10,12 +10,10 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Serve static files from public directory
-app.use(express.static('public'));
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Dynamic LIFF auth route (must be before static files)
 app.get('/liff-auth.html', (req: Request, res: Response) => {
   const liffId = process.env.LIFF_ID || '';
   const html = `<!DOCTYPE html>
@@ -174,6 +172,9 @@ app.use('/webhook', webhookRoutes);
 
 // Mount auth routes
 app.use('/auth', authRoutes);
+
+// Serve static files from public directory (after dynamic routes)
+app.use(express.static('public'));
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
