@@ -26,4 +26,13 @@ describe('Encryption', () => {
 
     process.env.ENCRYPTION_KEY = originalKey;
   });
+
+  it('should throw error if encryption key has invalid length', () => {
+    const originalKey = process.env.ENCRYPTION_KEY;
+    process.env.ENCRYPTION_KEY = '0'.repeat(63); // 31.5 bytes, invalid
+
+    expect(() => encrypt('test')).toThrow('must be 32 bytes');
+
+    process.env.ENCRYPTION_KEY = originalKey;
+  });
 });

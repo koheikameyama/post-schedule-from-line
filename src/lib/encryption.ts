@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;
@@ -10,7 +10,16 @@ function getEncryptionKey(): Buffer {
   if (!key) {
     throw new Error('ENCRYPTION_KEY is not set');
   }
-  return Buffer.from(key, 'hex');
+
+  const keyBuffer = Buffer.from(key, 'hex');
+
+  if (keyBuffer.length !== KEY_LENGTH) {
+    throw new Error(
+      `ENCRYPTION_KEY must be ${KEY_LENGTH} bytes (${KEY_LENGTH * 2} hex characters), got ${keyBuffer.length} bytes`
+    );
+  }
+
+  return keyBuffer;
 }
 
 export function encrypt(text: string): string {
