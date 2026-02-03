@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import prisma from './lib/db';
+import webhookRoutes from './routes/webhook';
 import authRoutes from './routes/auth';
 
 dotenv.config();
@@ -23,6 +24,9 @@ app.get('/db-test', async (req: Request, res: Response) => {
     res.status(500).json({ status: 'error', message: (error as Error).message });
   }
 });
+
+// Mount webhook routes
+app.use('/webhook', webhookRoutes);
 
 // Mount auth routes
 app.use('/auth', authRoutes);
