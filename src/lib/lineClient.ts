@@ -8,12 +8,12 @@ const config = {
 export const lineClient = new Client(config);
 
 export function createAuthMessage(userId: string): TextMessage {
-  const baseUrl = process.env.GOOGLE_REDIRECT_URI?.replace('/auth/google/callback', '') || 'http://localhost:3000';
-  const authUrl = `${baseUrl}/auth/google?userId=${encodeURIComponent(userId)}`;
+  const liffId = process.env.LIFF_ID || '';
+  const liffUrl = `https://liff.line.me/${liffId}`;
 
   return {
     type: 'text',
-    text: `このBotを使うには、Googleカレンダーとの連携が必要です。\n\n【認証手順】\n1. 下のURLを長押し\n2. 「Safariで開く」または「Chromeで開く」を選択\n3. Google認証を完了してください\n\n${authUrl}\n\n※LINE内蔵ブラウザでは認証できません。必ず外部ブラウザで開いてください。`,
+    text: `このBotを使うには、Googleカレンダーとの連携が必要です。\n\n下のURLをタップして認証してください：\n${liffUrl}`,
   };
 }
 
