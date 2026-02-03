@@ -15,11 +15,6 @@
     "lint": "tsc --noEmit",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.ts": [
-      "tsc --noEmit"
-    ]
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
