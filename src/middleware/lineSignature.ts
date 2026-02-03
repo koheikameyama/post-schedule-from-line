@@ -18,7 +18,12 @@ export function verifyLineSignature(
     throw new Error('LINE_CHANNEL_SECRET is not set');
   }
 
-  const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  // Use raw body for signature verification
+  const body = (req as any).rawBody;
+  if (!body) {
+    res.status(403).json({ error: 'No raw body' });
+    return;
+  }
 
   const hash = crypto
     .createHmac('sha256', channelSecret)
