@@ -3,14 +3,6 @@ name: CI
 on:
   push:
     branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'prisma/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - '.github/workflows/ci.yml'
-      - '.tool-versions'
 
 jobs:
   lint-and-build:
