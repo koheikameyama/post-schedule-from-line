@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import prisma from './lib/db';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ app.get('/db-test', async (req: Request, res: Response) => {
     res.status(500).json({ status: 'error', message: (error as Error).message });
   }
 });
+
+// Mount auth routes
+app.use('/auth', authRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
