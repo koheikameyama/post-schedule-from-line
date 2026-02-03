@@ -4,6 +4,7 @@ import prisma from './lib/db';
 import webhookRoutes from './routes/webhook';
 import authRoutes from './routes/auth';
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
