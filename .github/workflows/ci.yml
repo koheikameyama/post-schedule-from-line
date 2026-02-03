@@ -10,6 +10,9 @@ jobs:
   lint-and-build:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: file:./test.db
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
