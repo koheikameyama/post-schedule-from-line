@@ -30,3 +30,13 @@ export function createErrorMessage(): TextMessage {
     text: 'エラーが発生しました。しばらく待ってから再度お試しください。',
   };
 }
+
+export function createReAuthMessage(userId: string): TextMessage {
+  const liffId = process.env.LIFF_ID || '';
+  const liffUrl = `https://liff.line.me/${liffId}`;
+
+  return {
+    type: 'text',
+    text: `Google認証の有効期限が切れました。再度認証してください。\n\n下のURLをタップして認証してください：\n${liffUrl}`,
+  };
+}
