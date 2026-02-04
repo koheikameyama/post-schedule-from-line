@@ -4,6 +4,7 @@ import { verifyLineSignature } from '../middleware/lineSignature';
 import { lineClient, createAuthMessage, createScheduleNotFoundMessage, createErrorMessage } from '../lib/lineClient';
 import { extractSchedules } from '../lib/gemini';
 import { createMultipleCalendarEvents } from '../lib/googleCalendar';
+import { decrypt } from '../lib/encryption';
 import prisma from '../lib/db';
 
 const router = Router();
@@ -59,9 +60,13 @@ async function handleTextMessage(event: MessageEvent) {
       return;
     }
 
+    // Decrypt tokens before using with Google Calendar API
+    const accessToken = decrypt(user.googleAccessToken);
+    const refreshToken = decrypt(user.googleRefreshToken);
+
     const eventIds = await createMultipleCalendarEvents(
-      user.googleAccessToken,
-      user.googleRefreshToken,
+      accessToken,
+      refreshToken,
       result.schedules.map((s) => ({
         title: s.title,
         description: s.description,
