@@ -12,7 +12,8 @@ export interface CalendarEvent {
 export async function createCalendarEvent(
   accessToken: string,
   refreshToken: string,
-  event: CalendarEvent
+  event: CalendarEvent,
+  calendarId: string = 'primary'
 ): Promise<string> {
   const oauth2Client = getOAuthClient();
   oauth2Client.setCredentials({
@@ -37,7 +38,7 @@ export async function createCalendarEvent(
   };
 
   const response = await calendar.events.insert({
-    calendarId: 'primary',
+    calendarId,
     requestBody: eventResource,
   });
 
