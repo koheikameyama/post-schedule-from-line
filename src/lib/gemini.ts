@@ -12,18 +12,20 @@ export interface ExtractionResult {
   schedules: Schedule[];
 }
 
-export async function extractSchedules(message: string): Promise<ExtractionResult> {
+function getGeminiModel() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not set');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+}
 
+function getScheduleExtractionPrompt(source: string): string {
   const currentTime = new Date().toISOString();
 
-  const prompt = `以下のメッセージからスケジュール情報を抽出してください。
+  return `以下の${source}からスケジュール情報を抽出してください。
 複数のスケジュールがある場合はすべて抽出してください。
 
 抽出するフォーマット（JSON）：
@@ -48,25 +50,54 @@ export async function extractSchedules(message: string): Promise<ExtractionResul
 - 現在時刻: ${currentTime}
 - タイムゾーン: Asia/Tokyo (+09:00)
 
-メッセージ: ${message}
-
 JSONのみを返してください。説明文は不要です。`;
+}
+
+function parseScheduleResponse(text: string): ExtractionResult {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return { schedules: [] };
+  }
+  return JSON.parse(jsonMatch[0]) as ExtractionResult;
+}
+
+export async function extractSchedules(message: string): Promise<ExtractionResult> {
+  const model = getGeminiModel();
+  const prompt = getScheduleExtractionPrompt('メッセージ') + `\n\nメッセージ: ${message}`;
 
   try {
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
-
-    // Extract JSON from response (remove markdown code blocks if present)
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return { schedules: [] };
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    return parsed as ExtractionResult;
+    return parseScheduleResponse(text);
   } catch (error) {
     console.error('Gemini API error:', error);
+    return { schedules: [] };
+  }
+}
+
+export async function extractSchedulesFromImage(
+  imageBuffer: Buffer,
+  mimeType: string
+): Promise<ExtractionResult> {
+  const model = getGeminiModel();
+  const prompt = getScheduleExtractionPrompt('画像');
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: imageBuffer.toString('base64'),
+          mimeType,
+        },
+      },
+    ]);
+    const response = result.response;
+    const text = response.text();
+    return parseScheduleResponse(text);
+  } catch (error) {
+    console.error('Gemini API error (image):', error);
     return { schedules: [] };
   }
 }

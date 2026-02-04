@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { WebhookEvent, MessageEvent, PostbackEvent, TextEventMessage } from '@line/bot-sdk';
+import { WebhookEvent, MessageEvent, PostbackEvent, TextEventMessage, ImageEventMessage } from '@line/bot-sdk';
 import { verifyLineSignature } from '../middleware/lineSignature';
 import {
   lineClient,
@@ -14,7 +14,7 @@ import {
   ScheduleForDisplay,
   CalendarInfo,
 } from '../lib/lineClient';
-import { extractSchedules } from '../lib/gemini';
+import { extractSchedules, extractSchedulesFromImage } from '../lib/gemini';
 import { isTokenExpired, refreshAccessToken } from '../lib/googleAuth';
 import { createCalendarEvent } from '../lib/googleCalendar';
 import { encrypt, decrypt } from '../lib/encryption';
@@ -30,6 +30,8 @@ router.post('/', verifyLineSignature, async (req: Request, res: Response) => {
       events.map(async (event) => {
         if (event.type === 'message' && event.message.type === 'text') {
           await handleTextMessage(event);
+        } else if (event.type === 'message' && event.message.type === 'image') {
+          await handleImageMessage(event);
         } else if (event.type === 'postback') {
           await handlePostback(event);
         }
@@ -181,6 +183,77 @@ async function handleTextMessage(event: MessageEvent) {
     await lineClient.replyMessage(event.replyToken, createScheduleCarousel(schedulesForDisplay, calendars));
   } catch (error) {
     console.error('Error handling text message:', error);
+    await lineClient.replyMessage(event.replyToken, createErrorMessage());
+  }
+}
+
+async function handleImageMessage(event: MessageEvent) {
+  const userId = event.source.userId;
+  if (!userId) return;
+
+  const imageMessage = event.message as ImageEventMessage;
+
+  try {
+    const authResult = await ensureAuthenticatedUser(userId, event.replyToken);
+    if (!authResult) return;
+
+    const { user } = authResult;
+
+    // Get image content from LINE
+    const stream = await lineClient.getMessageContent(imageMessage.id);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const imageBuffer = Buffer.concat(chunks);
+
+    // Determine MIME type from content provider
+    const mimeType = imageMessage.contentProvider.type === 'line' ? 'image/jpeg' : 'image/jpeg';
+
+    // Extract schedules from image
+    const result = await extractSchedulesFromImage(imageBuffer, mimeType);
+
+    if (result.schedules.length === 0) {
+      await lineClient.replyMessage(event.replyToken, createScheduleNotFoundMessage());
+      return;
+    }
+
+    // Save pending schedules to database
+    const lineMessageId = event.message.id;
+    const savedSchedules = await Promise.all(
+      result.schedules.map((schedule) =>
+        prisma.pendingSchedule.create({
+          data: {
+            userId: user.id,
+            lineMessageId,
+            title: schedule.title,
+            description: schedule.description,
+            location: schedule.location,
+            startDateTime: new Date(schedule.startDateTime),
+            endDateTime: schedule.endDateTime ? new Date(schedule.endDateTime) : null,
+            status: 'PENDING',
+          },
+        })
+      )
+    );
+
+    // Create schedule display objects
+    const schedulesForDisplay: ScheduleForDisplay[] = savedSchedules.map((s) => ({
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      location: s.location,
+      startDateTime: s.startDateTime,
+      endDateTime: s.endDateTime,
+    }));
+
+    // Get user's writable calendars
+    const calendars = getUserCalendars(user);
+
+    // Send carousel with schedule cards and calendar buttons
+    await lineClient.replyMessage(event.replyToken, createScheduleCarousel(schedulesForDisplay, calendars));
+  } catch (error) {
+    console.error('Error handling image message:', error);
     await lineClient.replyMessage(event.replyToken, createErrorMessage());
   }
 }
