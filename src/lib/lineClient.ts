@@ -228,16 +228,23 @@ function createScheduleBubble(schedule: ScheduleForDisplay, index: number): Flex
 }
 
 export function createScheduleCarousel(schedules: ScheduleForDisplay[]): FlexMessage {
-  const bubbles = schedules.map((schedule, index) => createScheduleBubble(schedule, index));
+  // LINE Flex Message carousel supports max 12 bubbles
+  const maxBubbles = 12;
+  const limitedSchedules = schedules.slice(0, maxBubbles);
+  const bubbles = limitedSchedules.map((schedule, index) => createScheduleBubble(schedule, index));
 
   const carousel: FlexCarousel = {
     type: 'carousel',
     contents: bubbles,
   };
 
+  const altText = schedules.length > maxBubbles
+    ? `${schedules.length}件中${maxBubbles}件のスケジュールを表示`
+    : `${schedules.length}件のスケジュールが見つかりました`;
+
   return {
     type: 'flex',
-    altText: `${schedules.length}件のスケジュールが見つかりました`,
+    altText,
     contents: carousel,
   };
 }
