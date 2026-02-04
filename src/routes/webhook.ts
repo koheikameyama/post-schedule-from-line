@@ -101,6 +101,30 @@ async function ensureAuthenticatedUser(
   return { user, accessToken: decrypt(user.googleAccessToken) };
 }
 
+/**
+ * Get user's writable calendars from stored data
+ */
+function getUserCalendars(user: { googleCalendars: string | null }): CalendarInfo[] {
+  if (!user.googleCalendars) {
+    return [{ id: 'primary', name: 'メインカレンダー' }];
+  }
+
+  try {
+    const parsed = JSON.parse(user.googleCalendars);
+    const calendars = parsed
+      .filter((cal: any) => cal.accessRole === 'owner' || cal.accessRole === 'writer')
+      .map((cal: any) => ({
+        id: cal.id,
+        name: cal.summary || cal.id,
+        color: cal.backgroundColor,
+      }));
+
+    return calendars.length > 0 ? calendars : [{ id: 'primary', name: 'メインカレンダー' }];
+  } catch {
+    return [{ id: 'primary', name: 'メインカレンダー' }];
+  }
+}
+
 async function handleTextMessage(event: MessageEvent) {
   const userId = event.source.userId;
   if (!userId) return;
@@ -150,8 +174,11 @@ async function handleTextMessage(event: MessageEvent) {
       endDateTime: s.endDateTime,
     }));
 
-    // Send carousel with schedule cards
-    await lineClient.replyMessage(event.replyToken, createScheduleCarousel(schedulesForDisplay));
+    // Get user's writable calendars
+    const calendars = getUserCalendars(user);
+
+    // Send carousel with schedule cards and calendar buttons
+    await lineClient.replyMessage(event.replyToken, createScheduleCarousel(schedulesForDisplay, calendars));
   } catch (error) {
     console.error('Error handling text message:', error);
     await lineClient.replyMessage(event.replyToken, createErrorMessage());

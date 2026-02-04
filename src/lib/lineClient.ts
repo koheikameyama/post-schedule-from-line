@@ -61,7 +61,11 @@ function formatDateTime(date: Date): string {
   });
 }
 
-function createScheduleBubble(schedule: ScheduleForDisplay, index: number): FlexBubble {
+function createScheduleBubble(
+  schedule: ScheduleForDisplay,
+  index: number,
+  calendars: CalendarInfo[]
+): FlexBubble {
   const bodyContents: FlexBubble['body'] = {
     type: 'box',
     layout: 'vertical',
@@ -190,6 +194,37 @@ function createScheduleBubble(schedule: ScheduleForDisplay, index: number): Flex
     });
   }
 
+  // Build footer with calendar buttons + skip button
+  // Limit to 4 calendars to avoid too many buttons (LINE has practical limits)
+  const maxCalendarButtons = 4;
+  const limitedCalendars = calendars.slice(0, maxCalendarButtons);
+
+  const footerContents: any[] = limitedCalendars.map((cal) => ({
+    type: 'button',
+    style: 'primary',
+    height: 'sm',
+    action: {
+      type: 'postback',
+      label: cal.name.length > 20 ? cal.name.substring(0, 17) + '...' : cal.name,
+      data: `action=register&scheduleId=${schedule.id}&calendarId=${encodeURIComponent(cal.id)}`,
+      displayText: `${cal.name}に登録`,
+    },
+    color: '#1DB446',
+  }));
+
+  // Add skip button at the end
+  footerContents.push({
+    type: 'button',
+    style: 'secondary',
+    height: 'sm',
+    action: {
+      type: 'postback',
+      label: 'スキップ',
+      data: `action=skip&scheduleId=${schedule.id}`,
+      displayText: 'スキップ',
+    },
+  });
+
   return {
     type: 'bubble',
     body: bodyContents,
@@ -197,47 +232,36 @@ function createScheduleBubble(schedule: ScheduleForDisplay, index: number): Flex
       type: 'box',
       layout: 'vertical',
       spacing: 'sm',
-      contents: [
-        {
-          type: 'button',
-          style: 'primary',
-          height: 'sm',
-          action: {
-            type: 'postback',
-            label: 'カレンダーを選択',
-            data: `action=show_calendars&scheduleId=${schedule.id}`,
-            displayText: 'カレンダーを選択',
-          },
-          color: '#1DB446',
-        },
-        {
-          type: 'button',
-          style: 'secondary',
-          height: 'sm',
-          action: {
-            type: 'postback',
-            label: 'スキップ',
-            data: `action=skip&scheduleId=${schedule.id}`,
-            displayText: 'スキップ',
-          },
-        },
-      ],
+      contents: footerContents,
       flex: 0,
     },
   };
 }
 
-export function createScheduleCarousel(schedules: ScheduleForDisplay[]): FlexMessage {
-  const bubbles = schedules.map((schedule, index) => createScheduleBubble(schedule, index));
+export function createScheduleCarousel(
+  schedules: ScheduleForDisplay[],
+  calendars: CalendarInfo[]
+): FlexMessage {
+  // LINE Flex Message carousel supports max 12 bubbles
+  const maxBubbles = 12;
+  const limitedSchedules = schedules.slice(0, maxBubbles);
+  const bubbles = limitedSchedules.map((schedule, index) =>
+    createScheduleBubble(schedule, index, calendars)
+  );
 
   const carousel: FlexCarousel = {
     type: 'carousel',
     contents: bubbles,
   };
 
+  const altText =
+    schedules.length > maxBubbles
+      ? `${schedules.length}件中${maxBubbles}件のスケジュールを表示`
+      : `${schedules.length}件のスケジュールが見つかりました`;
+
   return {
     type: 'flex',
-    altText: `${schedules.length}件のスケジュールが見つかりました`,
+    altText,
     contents: carousel,
   };
 }
