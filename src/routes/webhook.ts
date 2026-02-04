@@ -222,28 +222,27 @@ async function handleShowCalendars(userId: string, scheduleId: string, replyToke
   if (user.googleCalendars) {
     try {
       const parsed = JSON.parse(user.googleCalendars);
-      calendars = parsed.map((cal: any) => ({
-        id: cal.id,
-        name: cal.summary || cal.id,
-        color: cal.backgroundColor,
-      }));
+      // Filter to only writable calendars (owner or writer access)
+      // accessRole: 'owner' | 'writer' | 'reader' | 'freeBusyReader'
+      calendars = parsed
+        .filter((cal: any) => cal.accessRole === 'owner' || cal.accessRole === 'writer')
+        .map((cal: any) => ({
+          id: cal.id,
+          name: cal.summary || cal.id,
+          color: cal.backgroundColor,
+        }));
     } catch {
       // If parsing fails, show primary calendar only
       calendars = [{ id: 'primary', name: 'メインカレンダー' }];
     }
-  } else {
+  }
+
+  // Fallback to primary calendar if no writable calendars found
+  if (calendars.length === 0) {
     calendars = [{ id: 'primary', name: 'メインカレンダー' }];
   }
 
-  // Filter to only writable calendars (primary and owned calendars)
-  const writableCalendars = calendars.filter(
-    (cal) => cal.id === 'primary' || !cal.id.includes('@group.calendar.google.com') || calendars.length <= 1
-  );
-
-  await lineClient.replyMessage(
-    replyToken,
-    createCalendarSelectionMessage(writableCalendars.length > 0 ? writableCalendars : calendars, scheduleId)
-  );
+  await lineClient.replyMessage(replyToken, createCalendarSelectionMessage(calendars, scheduleId));
 }
 
 async function handleRegister(userId: string, scheduleId: string, calendarId: string, replyToken: string) {
