@@ -9,12 +9,17 @@ export interface CalendarEvent {
   endDateTime?: string; // ISO 8601 format
 }
 
+export interface CalendarEventResult {
+  id: string;
+  htmlLink: string;
+}
+
 export async function createCalendarEvent(
   accessToken: string,
   refreshToken: string,
   event: CalendarEvent,
   calendarId: string = 'primary'
-): Promise<string> {
+): Promise<CalendarEventResult> {
   const oauth2Client = getOAuthClient();
   oauth2Client.setCredentials({
     access_token: accessToken,
@@ -42,17 +47,20 @@ export async function createCalendarEvent(
     requestBody: eventResource,
   });
 
-  return response.data.id || '';
+  return {
+    id: response.data.id || '',
+    htmlLink: response.data.htmlLink || '',
+  };
 }
 
 export async function createMultipleCalendarEvents(
   accessToken: string,
   refreshToken: string,
   events: CalendarEvent[]
-): Promise<string[]> {
-  const eventIds = await Promise.all(
+): Promise<CalendarEventResult[]> {
+  const results = await Promise.all(
     events.map((event) => createCalendarEvent(accessToken, refreshToken, event))
   );
 
-  return eventIds;
+  return results;
 }

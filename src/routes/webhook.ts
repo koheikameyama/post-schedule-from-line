@@ -366,7 +366,7 @@ async function handleRegister(userId: string, scheduleId: string, calendarId: st
 
   // Create calendar event
   const refreshToken = decrypt(user.googleRefreshToken!);
-  const googleEventId = await createCalendarEvent(
+  const calendarResult = await createCalendarEvent(
     accessToken,
     refreshToken,
     {
@@ -395,7 +395,7 @@ async function handleRegister(userId: string, scheduleId: string, calendarId: st
       scheduleId,
       action: 'REGISTERED',
       calendarId,
-      googleEventId,
+      googleEventId: calendarResult.id,
     },
   });
 
@@ -416,7 +416,7 @@ async function handleRegister(userId: string, scheduleId: string, calendarId: st
     calendarName = 'メインカレンダー';
   }
 
-  await lineClient.replyMessage(replyToken, createRegistrationSuccessMessage(schedule.title, calendarName));
+  await lineClient.replyMessage(replyToken, createRegistrationSuccessMessage(schedule.title, calendarName, calendarResult.htmlLink));
 }
 
 async function handleSkip(userId: string, scheduleId: string, replyToken: string) {

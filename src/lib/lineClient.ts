@@ -317,11 +317,16 @@ export function createCalendarSelectionMessage(
 
 export function createRegistrationSuccessMessage(
   title: string,
-  calendarName: string
+  calendarName: string,
+  eventLink?: string
 ): TextMessage {
+  let text = `「${title}」を${calendarName}に登録しました`;
+  if (eventLink) {
+    text += `\n\n予定を編集する:\n${eventLink}`;
+  }
   return {
     type: 'text',
-    text: `「${title}」を${calendarName}に登録しました`,
+    text,
   };
 }
 

@@ -1,0 +1,32 @@
+name: Database Cleanup
+
+on:
+  schedule:
+    # 毎日午前3時（JST）= UTC 18:00
+    - cron: '0 18 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js from .tool-versions
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.tool-versions'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run cleanup script
+        run: npx ts-node scripts/cleanup-old-data.ts
