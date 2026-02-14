@@ -33,7 +33,7 @@ function getScheduleExtractionPrompt(source: string): string {
   "schedules": [
     {
       "title": "会議",
-      "description": "営業チームとの打ち合わせ",
+      "description": "営業チームとの打ち合わせ\n持ち物: 企画書、見積もり\n参加者: 田中、鈴木",
       "location": "会議室A",
       "startDateTime": "2026-02-04T15:00:00+09:00",
       "endDateTime": "2026-02-04T16:00:00+09:00"
@@ -47,6 +47,15 @@ function getScheduleExtractionPrompt(source: string): string {
 - 場所が含まれている場合は location フィールドに含めてください（例: 「渋谷で」→ "location": "渋谷"）
 - 場所がない場合は location フィールドを省略してください
 - スケジュール情報が全く含まれていない場合は、空の配列を返してください
+- description には、カレンダーのメモとして残すべき情報をできるだけ含めてください。例:
+  - 持ち物・準備するもの
+  - 参加者・相手の名前
+  - URL・リンク
+  - 注意事項・補足情報
+  - 費用・料金
+  - 予約番号・確認番号
+  - その他、後から見返した時に役立つ情報
+- title や location に含まれない情報で、メモとして有用なものはすべて description に記載してください
 - 現在時刻: ${currentTime}
 - タイムゾーン: Asia/Tokyo (+09:00)
 
